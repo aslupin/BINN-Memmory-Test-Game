@@ -107,7 +107,7 @@ while True: # main thread was controller
         time.sleep(1.5)
         problem_game = []
 
-    if(isPlay):
+    if(isPlay and not _start):
         # start game !
         problem_game = genProblen()
         _start = True

@@ -5,11 +5,12 @@ import random
 import network
 from esp import espnow
 from machine import Pin
+import ubinascii
 
 # config network
 w = network.WLAN()
 w.active(True)
-print('my mac addr:', w.config('mac'))
+print('my mac addr (Controller):', ubinascii.hexlify(w.config('mac'),':').decode())
 
 # config esp32
 UNICAST_DISPLAY = b'\xFF' * 6

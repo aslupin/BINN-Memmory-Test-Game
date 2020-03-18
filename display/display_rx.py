@@ -1,5 +1,5 @@
 machine = 'display-node'
-
+import ubinascii
 import time
 import network
 from esp import espnow
@@ -51,7 +51,7 @@ starter()
 # config network
 w = network.WLAN()
 w.active(True)
-print('my mac addr:', w.config('mac'))
+print('my mac addr (Display):', ubinascii.hexlify(w.config('mac'),':').decode())
 
 #config LEDs
 leds = {}

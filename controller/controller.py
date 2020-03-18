@@ -98,11 +98,14 @@ _start = False # state for start and end game
 isPlay = True  # signal mock  (eg. sensor)
 time.sleep(10) # wating for display show problem
 
-while True: # main thread was controller 
-    print('player 1 score: ' + str(player['1']['score']))
-    print('player 2 score: ' + str(player['2']['score']))
+while True: # main thread was controller
+    if(_start):
+        print('player 1 score: ' + str(player['1']['score']))
+        print('player 2 score: ' + str(player['2']['score']))
+        time.sleep(0.5)
     if(player['1']['score'] == 10 or player['2']['score'] == 10):
         isPlay = False
+        _start = False
         print(max(player['1']['score'],player['2']['score']))
         time.sleep(1.5)
         problem_game = []
@@ -116,6 +119,4 @@ while True: # main thread was controller
         _thread.start_new_thread(sendToDisplay, ())
         _thread.start_new_thread(getFromPlayer, ())
         _thread.start_new_thread(getFromPlayer, ())
-    else:
-        _start = False
     pass

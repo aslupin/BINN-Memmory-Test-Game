@@ -16,10 +16,24 @@ w.active(True)
 print('my mac addr (Controller):', ubinascii.hexlify(
     w.config('mac'), ':').decode())
 
+# MAC
+MAC = {
+    'p1': b'\xa4\xcf\x12\x8f\xb8\x74',
+    'p2': '',
+    'display': ''
+}
 # config esp32
 UNICAST_DISPLAY = b'\xFF' * 6
 espnow.init()
 espnow.add_peer(UNICAST_DISPLAY)
+
+
+def getMac(mac):
+    return ''.join(["{:02X}".format(x) for x in mac])
+
+
+def getMsg(msg):
+    return msg.decode('utf-8')
 
 
 def genProblem(amount):
@@ -121,22 +135,29 @@ def ledSelect():
         time.sleep(0.25)
 
 
+def selectSwitch():
+    global select
+    if (pushSwitch(PIN_RESET) == 0):
+        select = True
+
+
 def selectGame():
-    select = False
-    global selected_game, _start
+    global selected_game, _start, select
+    select = False  # initial selecting state
+    _thread.start_new_thread(selectSwitch, ())
     while (not select):
+        # selected_game is 1 or 2
         selected_game = (selected_game +
                          (pushSwitch(PIN_SELECT) == 0)) % 3
         if (selected_game == 3):
             selected_game = 1
-        if (pushSwitch(PIN_RESET) == 0):
-            select = True
+
         print("select game:", selected_game)
         time.sleep(0.5)
         ledSelect()
 
-# reset game
 
+# reset game
 
 def reset():
     global reset, _start
@@ -145,8 +166,37 @@ def reset():
         _start = False
     print('reset')
 
+# Connecting Display, P1, P2
 
+
+def connectDevice(device):
+    espnow.add_peer(MAC['p1'])
+    mac = MAC[device]
+    while(signal[device] == False):
+        espnow.send(mac, 'connecting')
+        time.sleep(1)
+
+
+def callBackConnect(*dobj):
+    mac = getMac(dobj[0][0])
+    msg = getMsg(dobj[0][1])
+    print('connect with', mac, msg)
+    if (mac == getMac(MAC['p1']) and msg == 'connected'):
+        signal['p1'] = True
+    elif (mac == getMac(MAC['p2']) and msg == 'connected'):
+        signal['p2'] = True
+    elif (mac == getMac(MAC['display']) and msg == 'connected'):
+        signal['display'] = True
+
+
+def connectMain():
+    P1 = 'p1'
+    _thread.start_new_thread(connectDevice, ['p1'])
+    # _thread.start_new_thread(connectDevice, ('p2'))
+    # _thread.start_new_thread(connectDevice, ('display'))
 # initial
+
+
 player = {
     '1': {  # player 1
         'score': 0
@@ -157,30 +207,61 @@ player = {
 }
 
 ledBuildIn = Pin(2, Pin.OUT)
-ledBuildIn.value(1)
+ledBuildIn.off()
 
-time_counting = 10  # game1
-amount_state = 20  # game2
+# signal
+signal = {
+    'p1': False,
+    'p2': True,  # mockup
+    'display': True,  # mockup
+}
+isPlay = False  # signal mock  (eg. sensor)
 
+time_counting = 10  # timing of game1
+amount_state = 20  # state of game2
 
 problem_game = []
 selected_game = 0  # 0 : none selected, 1, 2
+select = False  # state of selecting game
 _start = False  # state for start and end game
-isPlay = True  # signal mock  (eg. sensor)
 reset = False  # state when reset btn is push
 time.sleep(3)  # wating for display show problem
-print('main')
+
+
+print('wait for connection')
+espnow.on_recv(callBackConnect)
+connectMain()
+
+while (signal['p1'] != True or signal['p2'] != True or signal['display'] != True):
+
+    ledBuildIn.on()
+    time.sleep(1)
+    ledBuildIn.off()
+    time.sleep(1)
+
+    for device, ready in signal.items():
+        if (not ready):
+            print('wait', device)
+            time.sleep(1)
+
+
+isPlay = True
+ledBuildIn.on()
+print('connecting')
+
 while True:  # main thread was controller
     if(_start):
         print('player 1 score: ' + str(player['1']['score']))
         print('player 2 score: ' + str(player['2']['score']))
         time.sleep(0.5)
-    if(not _start and selected_game != 0):
-        isPlay = False
+    if(not _start and selected_game != 0):  # when end game
+        print(max(player['1']['score'], player['2']['score']))
+        print('Game is end')
+        time.sleep(1.5)
+
+        # re init global value
         _start = False
         reset = False
-        print(max(player['1']['score'], player['2']['score']))
-        time.sleep(1.5)
         selected_game == 0
         problem_game = []
     if (isPlay and not _start and not reset):

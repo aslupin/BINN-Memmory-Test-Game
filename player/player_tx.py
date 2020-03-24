@@ -4,6 +4,7 @@ import time
 import network
 from esp import espnow
 from machine import Pin
+
 lb = Pin(2, Pin.OUT)
 class Button:
     """
@@ -50,7 +51,7 @@ print('my mac addr (Player):', ubinascii.hexlify(w.config('mac'),':').decode())
 
 
 # config esp32
-UNICAST_CONTROLLER = b'\x240ac49f5058'
+UNICAST_CONTROLLER = b'\xFF' * 6
 espnow.init()
 espnow.add_peer(UNICAST_CONTROLLER)
 

@@ -18,14 +18,34 @@ def starter():
 def gameI(game):
     global leds
     for val in game:
-        leds[val.color].value(val.value)
-        time.sleep(5)
+        if(val == 'green'):
+            ledd = ['1','4']
+        elif(val == 'red'):
+            ledd = ['2','5']
+        elif(val == 'blue'):
+            ledd = ['3','6']
+        leds[ledd[0]].value(0)
+        leds[ledd[1]].value(0)
+        time.sleep(0.6)
+        leds[ledd[0]].value(1)
+        leds[ledd[1]].value(1)
+        time.sleep(0.1)
 
 def gameII(game):
     global leds
     for val in game:
-        leds[val.color].value(val.value)
-        time.sleep(5)
+        if(val == 'green'):
+            ledd = ['1','4']
+        elif(val == 'red'):
+            ledd = ['2','5']
+        elif(val == 'blue'):
+            ledd = ['3','6']
+        leds[ledd[0]].value(0)
+        leds[ledd[1]].value(0)
+        time.sleep(0.5)
+        leds[ledd[0]].value(1)
+        leds[ledd[1]].value(1)
+        time.sleep(0.1)
 
 
 def receive_callback(*dobj):
@@ -39,7 +59,8 @@ def receive_callback(*dobj):
     #   }
     # }
 
-    print("Received:", msg)
+    print("Received: ", msg)
+    msg = eval(msg)
     if(msg['game'] == 1 ):
         gameI(msg['data'])
     elif(msg['game'] == 2):
@@ -55,18 +76,33 @@ print('my mac addr (Display):', ubinascii.hexlify(w.config('mac'),':').decode())
 
 #config LEDs
 leds = {}
-led_pins = {'1':4 ,'2':16 ,'3':17 ,'4':18 ,'5':19 ,'6':13}
+led_pins = {'1':15 ,'2':16 ,'3':17 ,'4':5 ,'5':18 ,'6':19}
 for key, val in led_pins.items():
     leds[key] = Pin(val, Pin.OUT)
 
-#print(leds, leds['1'], type(leds['1']))
+for k, v in leds.items():
+#     print(v)
+    v.value(1)
+    
+# print(leds, leds['1'], type(leds['1']))
 
-# config espnow
+#config espnow
 espnow.init()
 espnow.on_recv(receive_callback)
 
 while True:
     pass
+
+## test ###################
+# msg = "{ 'game' : 1, 'data' : [ 'red', 'red', 'green', 'blue', 'green', 'red', 'blue', 'blue', 'red', 'green'] }"
+
+# print("Received: ", msg)
+# msg = eval(msg)
+# if(msg['game'] == 1 ):
+#     gameI(msg['data'])
+# elif(msg['game'] == 2):
+#     gameII(msg['data'])
+###########################
 
 
 

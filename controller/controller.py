@@ -7,6 +7,9 @@ from esp import espnow
 from machine import Pin
 import ubinascii
 
+player_one_mac = b'\xa4\xcf\x12\x8f\xb8t'
+player_two_mac = b'\xa4\xcf\x12\x8f\xb8t'
+
 # config network
 w = network.WLAN()
 w.active(True)
@@ -42,7 +45,8 @@ def sendToDisplay():
         
 
 def strategyGameI(msg):
-    global problem_game, player
+    global problem_game
+    global player
     strategy = {'1': 'blue', '2': 'green', '3':'red'}
     print("Received from :", msg['player'])
     print("actions are :", msg['action'])
@@ -55,12 +59,18 @@ def strategyGameII(msg):
     return 0
 
 def receive_callback(*dobj):
-    global selected_game
+    print('get')
     msg = dict(dobj)
-    if(selected_game == 1 ):
-        strategyGameI(msg)
-    elif(selected_game == 2):
-        strategyGameII(msg)
+    if(b'\xa4\xcf\x12\x8f\xb8t' in msg):
+        print(msg)
+        #global selected_game
+        #if(selected_game == 1 ):
+        #    print('poon')
+            #strategyGameI(data)
+        #elif(selected_game == 2):
+        #    strategyGameII(data)
+
+        
 
     # {
     #     'player' : 1 
@@ -96,7 +106,7 @@ problem_game = []
 selected_game = 1 # 1, 2 
 _start = False # state for start and end game
 isPlay = True  # signal mock  (eg. sensor)
-time.sleep(10) # wating for display show problem
+#time.sleep(10) # wating for display show problem
 
 while True: # main thread was controller
     if(_start):
@@ -104,6 +114,7 @@ while True: # main thread was controller
         print('player 2 score: ' + str(player['2']['score']))
         time.sleep(0.5)
     if(player['1']['score'] == 10 or player['2']['score'] == 10):
+        print('game over')
         isPlay = False
         _start = False
         print(max(player['1']['score'],player['2']['score']))
@@ -114,9 +125,8 @@ while True: # main thread was controller
         # start game !
         problem_game = genProblen()
         _start = True
-        time.sleep(5)
+        time.sleep(3)
         print('start game!')
-        _thread.start_new_thread(sendToDisplay, ())
-        _thread.start_new_thread(getFromPlayer, ())
+        #_thread.start_new_thread(sendToDisplay, ())
         _thread.start_new_thread(getFromPlayer, ())
     pass

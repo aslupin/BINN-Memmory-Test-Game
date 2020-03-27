@@ -48,7 +48,8 @@ def pushSwitch(PIN):
     # button = Button(pin=Pin(PIN, mode=Pin.IN, pull=Pin.PULL_UP))
     # return button.value()
 
-def sendToPlayer(msg = "", player = 'p1'):
+
+def sendToPlayer(msg="", player='p1'):
     obj = {}
     obj['msg'] = msg
     espnow.send(MAC[player], str(obj))
@@ -57,6 +58,7 @@ def sendToPlayer(msg = "", player = 'p1'):
     # {
     #     msg : 'msg'
     # }
+
 
 def sendToDisplay():
     msg = {}
@@ -125,15 +127,15 @@ def startGameI():
 
     while(time_counting >= 0 and _start):
         # SEND SCORES AND TIMING TO OLED ON PLAYER BOARDS.
-        msg_p1 = '"TIME LEFT : {}", "SCORE : {}"'.format(str(time_counting), str(player['1']['score'])) 
-        msg_p2 = '"TIME LEFT : {}", "SCORE : {}"'.format(str(time_counting), str(player['2']['score'])) 
-        sendToPlayer(msg = msg_p1, player = 'p1')
-        sendToPlayer(msg = msg_p2, player = 'p2')
+        msg_p1 = '"TIME LEFT : {}", "SCORE : {}"'.format(
+            str(time_counting), str(player['1']['score']))
+        msg_p2 = '"TIME LEFT : {}", "SCORE : {}"'.format(
+            str(time_counting), str(player['2']['score']))
+        sendToPlayer(msg=msg_p1, player='p1')
+        sendToPlayer(msg=msg_p2, player='p2')
         print(time_counting)
         time.sleep(1)
         time_counting -= 1
-
-        
 
     for key, _ in storage.items():
         for i in range(len(storage[key])):
@@ -225,7 +227,7 @@ def reset():
 def connectDevice(device):
     espnow.add_peer(MAC[device])
     mac = MAC[device]
-    while(signal[device] == False): # bug on staging 
+    while(signal[device] == False):  # bug on staging
         espnow.send(mac, 'connecting')
         time.sleep(1)
 
@@ -264,21 +266,22 @@ player = {
 ledBuildIn = Pin(2, Pin.OUT)
 ledBuildIn.off()
 
-# signal
+# SIGNAL
+# set true for mockup
 signal = {
     'p1': False,
-    'p2': True,  # mockup
-    'display': True,  # mockup
+    'p2': False,
+    'display': False,
 }
 devicesConnect = False  # signal mock  (eg. sensor)
 
 initial_time = 5
 time_counting = initial_time  # timing of game1
-amount_state = 20  # state of game2
+amount_state = 10  # state of game2
 
 problem_game = []
 selected_game = 1  # selected, 1, 2
-select = True  # state for select or not select game
+select = False  # state for select or not select game
 _start = False  # state for start and end game
 # time.sleep(3)  # wating for display show problem
 selected_game = 1
@@ -316,42 +319,41 @@ while True:  # main thread was controller
         print('player 1 score: ' + score_p1)
         print('player 2 score: ' + score_p2)
         # SEND SCORES TO OLED ON PLAYER BOARDS.
-        # msg = '"SCORE : ","{}"'.format(score_p1) 
-        # sendToPlayer(msg = msg, player = 'p1')
-        # msg = '"SCORE : ","{}"'.format(score_p2) 
-        # sendToPlayer(msg = msg, player = 'p2')
+        msg = '"SCORE : ","{}"'.format(score_p1)
+        sendToPlayer(msg=msg, player='p1')
+        msg = '"SCORE : ","{}"'.format(score_p2)
+        sendToPlayer(msg=msg, player='p2')
 
         time.sleep(0.5)
-    # if ((not _start and select == True)):  # when end game
-    #     print('player 1 score: ' + str(player['1']['score']))
-    #     print('player 2 score: ' + str(player['2']['score']))
+    if ((not _start and select == True)):  # when end game
+        print('player 1 score: ' + str(player['1']['score']))
+        print('player 2 score: ' + str(player['2']['score']))
 
-    #     max_score = max(player['1']['score'], player['2']['score'])
-    #     if(max_score == player['1']['score']):
-    #         msg_p1 = '"SCORE : ","{}","YOU WIN!"'.format(score_p1)
-    #         msg_p2 = '"SCORE : ","{}","YOU LOSE!"'.format(score_p2) 
-    #         sendToPlayer(msg = msg_p1, player = 'p1')
-    #         sendToPlayer(msg = msg_p2, player = 'p2')
-    #     else:
-    #         msg_p1 = '"SCORE : ","{}","YOU LOSE!"'.format(score_p1)
-    #         msg_p2 = '"SCORE : ","{}","YOU WIN!"'.format(score_p2) 
-    #         sendToPlayer(msg = msg_p1, player = 'p1')
-    #         sendToPlayer(msg = msg_p2, player = 'p2')
+        max_score = max(player['1']['score'], player['2']['score'])
+        if(max_score == player['1']['score']):
+            msg_p1 = '"SCORE : ","{}","YOU WIN!"'.format(score_p1)
+            msg_p2 = '"SCORE : ","{}","YOU LOSE!"'.format(score_p2)
+            sendToPlayer(msg=msg_p1, player='p1')
+            sendToPlayer(msg=msg_p2, player='p2')
+        else:
+            msg_p1 = '"SCORE : ","{}","YOU LOSE!"'.format(score_p1)
+            msg_p2 = '"SCORE : ","{}","YOU WIN!"'.format(score_p2)
+            sendToPlayer(msg=msg_p1, player='p1')
+            sendToPlayer(msg=msg_p2, player='p2')
 
-    #     print('Game is end')
-    #     time.sleep(1.5)
+        print('Game is end')
+        time.sleep(1.5)
 
-    #     # re init global value
-    #     _start = False
-    #     reset = False
-    #     selected_game == 1
-    #     select = False
-    #     problem_game = []
-    #     storage = {
-    #         '1': [],  # player1
-    #         '2': []  # player2
-    #     }
-    #     time_counting = initial_time
+        # re init global value
+        _start = False
+        selected_game == 1
+        select = False
+        problem_game = []
+        storage = {
+            '1': [],  # player1
+            '2': []  # player2
+        }
+        time_counting = initial_time
 
     if (devicesConnect and not _start):
         # select game

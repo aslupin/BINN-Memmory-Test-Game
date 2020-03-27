@@ -95,7 +95,7 @@ def sendToController(color):
     msg['action']['value'] = 1  # True , False
     espnow.send(UNICAST_CONTROLLER, str(msg))
     print('Send success')
-    setterOLED("MODE: playing", color+" pressed!")
+    #setterOLED("MODE: playing", color+" pressed!")
     # {
     #     'player' : 1
     #     'action' : {

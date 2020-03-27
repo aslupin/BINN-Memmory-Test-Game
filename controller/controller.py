@@ -20,8 +20,8 @@ print('my mac addr (Controller):', ubinascii.hexlify(
 
 # MAC
 MAC = {
-    'p1': b'\xa4\xcf\x12\x8f\xb8\x74',
-    'p2': b'\xA4\xCF\x12\x8F\xB7\x84',
+    'p2': b'\xa4\xcf\x12\x8f\xb8\x74',
+    'p1': b'\xA4\xCF\x12\x8F\xB7\x84',
     'display': b'\x24\x0a\xc4\x9f\x50\x58'
 }
 # config esp32
@@ -40,7 +40,9 @@ def getMsg(msg):
 
 def genProblem(amount):
     strategy = {'1': 'blue', '2': 'green', '3': 'red'}
-    return [strategy[str(random.randint(1, 3))] for _ in range(amount)]
+    random.seed(12)
+    states = lambda : random.randint(1, 3)
+    return [strategy[str(states())] for _ in range(amount)]
 
 
 def pushSwitch(PIN):
@@ -84,6 +86,9 @@ def strategyGame(msg):
     elif(selected_game == 2):
         if(action['color'] == problem_game[0]):
             player[str(msg['player'])]['score'] += 1
+            msg = '"SCORE : ","{}"'.format(player[str(msg['player'])]['score'])
+            sendToPlayer(msg=msg, player=msg['player'])
+            
 
 
 def receive_callback(*dobj):
@@ -104,10 +109,7 @@ def receive_callback(*dobj):
 def getFromPlayer():
     # config espnow
     # espnow.init()
-    while _start:
-        espnow.on_recv(receive_callback)
-        time.sleep(0.1)
-        pass
+    espnow.on_recv(receive_callback)
 
 
 # generate problem for game1 and game2
@@ -116,39 +118,55 @@ def getFromPlayer():
 def startGameI():
     print("###### GAME1 ######")
     global problem_game, _start, time_counting, player
-    problem_game = genProblem(3)
+    game_state = 10
+    problem_game = genProblem(game_state)
     sendToDisplay()
+    time.sleep(game_state*0.8)
     print(problem_game)
 
     # count down before game start
     for count in range(3, 0, -1):
         print("count down :", count)
+        msg_p1 = '"COUNT : {}",'.format(str(count))
+        msg_p2 = '"COUNT : {}",'.format(str(count))
+        sendToPlayer(msg=msg_p1, player='p1')
+        sendToPlayer(msg=msg_p2, player='p2')
         time.sleep(1)
-
-    while(time_counting >= 0 and _start):
+    print(time_counting)
+    _start = True
+    while(time_counting > 0 and _start):
         # SEND SCORES AND TIMING TO OLED ON PLAYER BOARDS.
-        msg_p1 = '"TIME LEFT : {}", "SCORE : {}"'.format(
-            str(time_counting), str(player['1']['score']))
-        msg_p2 = '"TIME LEFT : {}", "SCORE : {}"'.format(
-            str(time_counting), str(player['2']['score']))
+        msg_p1 = '"TIME LEFT : {}",'.format(str(time_counting))
+        msg_p2 = '"TIME LEFT : {}",'.format(str(time_counting))
         sendToPlayer(msg=msg_p1, player='p1')
         sendToPlayer(msg=msg_p2, player='p2')
         print(time_counting)
         time.sleep(1)
         time_counting -= 1
+    
+    print(storage)
 
-    for key, _ in storage.items():
-        for i in range(len(storage[key])):
-            if (storage[key][i] == problem_game[i]):
-                player[key]['score'] += 1
+    for key, scores in storage.items():
+        for i in range(len(scores)):
+            try:
+                if (scores[i] == problem_game[i]):
+                    print(key)
+                    player[key]['score'] += 1
+            except:
+                continue
     _start = False
+
+    msg_p1 = '"SCORE : {}",'.format(str(player['1']['score']))
+    msg_p2 = '"SCORE : {}",'.format(str(player['2']['score']))
+    sendToPlayer(msg=msg_p1, player='p1')
+    sendToPlayer(msg=msg_p2, player='p2')
 
 
 def startGameII():
     print("###### GAME2 ######")
     global problem_game, _start, amount_state
+    _start = True
     for _ in range(amount_state):
-        print(_start)
         if (not _start):
             break
         problem_game = genProblem(1)
@@ -313,19 +331,19 @@ ledBuildIn.on()
 print('connecting')
 
 while True:  # main thread was controller
-    if(_start and selected_game == 2):
-        score_p1 = str(player['1']['score'])
-        score_p2 = str(player['2']['score'])
-        print('player 1 score: ' + score_p1)
-        print('player 2 score: ' + score_p2)
-        # SEND SCORES TO OLED ON PLAYER BOARDS.
-        msg = '"SCORE : ","{}"'.format(score_p1)
-        sendToPlayer(msg=msg, player='p1')
-        msg = '"SCORE : ","{}"'.format(score_p2)
-        sendToPlayer(msg=msg, player='p2')
+    score_p1 = str(player['1']['score'])
+    score_p2 = str(player['2']['score'])
+    # if(_start and selected_game == 2):
+    #     print('player 1 score: ' + score_p1)
+    #     print('player 2 score: ' + score_p2)
+    #     # SEND SCORES TO OLED ON PLAYER BOARDS.
+    #     msg = '"SCORE : ","{}"'.format(score_p1)
+    #     sendToPlayer(msg=msg, player='p1')
+    #     msg = '"SCORE : ","{}"'.format(score_p2)
+    #     sendToPlayer(msg=msg, player='p2')
+    #     time.sleep(0.5)
 
-        time.sleep(0.5)
-    if ((not _start and select == True)):  # when end game
+    if ((not _start and select)):  # when end game
         print('player 1 score: ' + str(player['1']['score']))
         print('player 2 score: ' + str(player['2']['score']))
 
@@ -355,15 +373,16 @@ while True:  # main thread was controller
         }
         time_counting = initial_time
 
-    if (devicesConnect and not _start):
+    if (devicesConnect and not _start and not select):
         # select game
         print("Select Game")
         while(select == False):
             selectGame()
         # count before game start
-        for _ in range(3):
-            time.sleep(1)
+        # for _ in range(3):
+            # time.sleep(1)
         # start game !
+        
         if(selected_game == 1):
             _thread.start_new_thread(startGameI, ())
         if(selected_game == 2):
@@ -371,4 +390,4 @@ while True:  # main thread was controller
         _start = True
         print('start game!')
         _thread.start_new_thread(getFromPlayer, ())
-        _thread.start_new_thread(reset, ())
+        # _thread.start_new_thread(reset, ())

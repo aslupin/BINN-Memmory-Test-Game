@@ -2,7 +2,9 @@ import ubinascii
 import time
 import network
 from esp import espnow
-from machine import Pin
+from machine import Pin, I2C
+import ssd1306
+import json
 
 lb = Pin(2, Pin.OUT)
 
@@ -37,16 +39,11 @@ class Button:
         # else:
         #    print("debounce: %s" % (self._next_call - time.ticks_ms()))
 
-
-def button_a_callback(pin):
-    print("Button A (%s) changed to: %r" % (pin, pin.value()))
-    # lb.value(not lb.value())
-
-
-def button_b_callback(pin):
-    print("Button B (%s) changed to: %r" % (pin, pin.value()))
-
-
+# config OLED
+i2c = I2C(-1, scl=Pin(22), sda=Pin(21))
+oled_width = 128
+oled_height = 64
+oled = ssd1306.SSD1306_I2C(oled_width, oled_height, i2c)
 # config network
 w = network.WLAN()
 w.active(True)
@@ -55,9 +52,20 @@ print('my mac addr (Player):', ubinascii.hexlify(w.config('mac'), ':').decode())
 
 # config esp32
 UNICAST_CONTROLLER = b'\x30\xae\xa4\x12\x1f\x28'
+# UNICAST_CONTROLLER = b'\x30aea4121f28'
 espnow.init()
 espnow.add_peer(UNICAST_CONTROLLER)
 
+
+def setterOLED(*messenger, posy=[]):
+    if(not posy):
+        posy = [0, 10, 20]
+
+    oled.fill(0)
+    for msg in messenger:
+        print(msg)
+        oled.text(str(msg), 0, posy.pop(0))
+    oled.show()
 
 def addLightOnBorad(color):
     print('sw color :' + color)
@@ -87,7 +95,7 @@ def sendToController(color):
     msg['action']['value'] = 1  # True , False
     espnow.send(UNICAST_CONTROLLER, str(msg))
     print('Send success')
-
+    setterOLED("MODE: playing", color+" pressed!")
     # {
     #     'player' : 1
     #     'action' : {
@@ -121,7 +129,6 @@ def setLed():
 
 
 setLed()
-
 # config switchs
 switchs = {}
 switch_pins = {'blue': 16, "green": 17, 'red': 5}
@@ -153,20 +160,45 @@ def recieveFromController(*dobj):
     msg = dobj[0][1].decode("utf-8")
     mac = ''.join(["{:02X}".format(x) for x in dobj[0][0]])
     controller_mac = ''.join(["{:02X}".format(x) for x in UNICAST_CONTROLLER])
-    if (mac == controller_mac and msg == 'connecting'):
-        connect = True
+    # print(dobj, msg)
+    if(mac == controller_mac):
+        if(not connect):           
+            if(msg == 'connecting'):
+                connect = True
+        else:
+            # connected 
+            '''
+            msg['msg'] should be tuple<string>: 
+            msg['msg'] = "'1','2','3'" => msgs = ('1','2','3')
+
+            setterOLED will parse each arguments to newline.
+            parse for tuple<string>
+            '''
+            print('old:', msg)
+            msg = msg.replace("\"", "$") 
+            msg = msg.replace("'", "\"")
+            msg = msg.replace("$", "'")
+            print('new:', msg)
+            msg = json.loads(msg)
+            msgs = eval(msg['msg'])   
+            setterOLED(*msgs) 
+            
+            
 
 
 connect = False
 start = False
 
 espnow.on_recv(recieveFromController)
+setterOLED('connecting...')
 while (not connect):
-    print('wait for connection')
+    
+    print('wait for connection...')
     time.sleep(1)
     lb.on()
     time.sleep(1)
     lb.off()
+setterOLED('connected')
 print('connected')
 espnow.send(UNICAST_CONTROLLER, 'connected')
 connect = True

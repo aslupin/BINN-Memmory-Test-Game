@@ -55,10 +55,10 @@ Binn is a game for relaxing and brain training that comes with 6 led rgb lights 
 
 #### Contributors :
 
-6010500109 Poon Shotateerawasu ([aslupin](https://github.com/aslupin))
-6010502543 Chitsanupong Voravijitchaikul ([NuChitsanupong](https://github.com/NuChitsanupong))
-6010504651 Kittapon Junsupakul ([ppipee](https://github.com/ppipee))
-6010504767 Noraset Potong ([aum0056](https://github.com/aum0056))
+- 6010500109 Poon Shotateerawasu ([github/aslupin](https://github.com/aslupin))
+- 6010502543 Chitsanupong Voravijitchaikul ([github/NuChitsanupong](https://github.com/NuChitsanupong))
+- 6010504651 Kittapon Junsupakul ([github/ppipee](https://github.com/ppipee))
+- 6010504767 Noraset Potong ([github/aum0056](https://github.com/aum0056))
 
 ##### Department of Computer Engineering, Faculty of Engineering, Kasetsart University
 

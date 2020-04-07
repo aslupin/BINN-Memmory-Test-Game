@@ -20,7 +20,7 @@ Binn is a game for relaxing and brain training that comes with 6 led rgb lights 
 - ubinascii
 - Pin
 - random
-- \_threa
+- \_thread
 
 #### Board schematic :
 
